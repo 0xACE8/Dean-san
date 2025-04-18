@@ -168,6 +168,9 @@ jobs:
         ${{ secrets.XM_R3G_AIAM1806_CONFIG }}
         mv .config openwrt/.config
         cd openwrt
+        ls
+        ls feeds
+        ls feeds/ace8
         ${{ secrets.AIAM1806_REPO_PATCH }}
         ${{ secrets.XM_R3G_AIAM1806_HOSTNAME }}
         ${{ secrets.ARGON_THEME_XIAOMI }}
