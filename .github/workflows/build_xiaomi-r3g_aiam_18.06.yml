@@ -14,23 +14,23 @@ on:
   workflow_dispatch:
     inputs:
       restore_configuration:
-        description: 'Restore configuration archive (バックアップした構成アーカイブを復元する)'
+        description: 'Restore configuration archive\n(バックアップした構成アーカイブを復元する)'
         type: boolean
         default: false
       telegram_notify:
-        description: 'Enable Telegram Notify (テレグラム通知を有効にする)'
+        description: 'Enable Telegram Notify\n(テレグラム通知を有効にする)'
         type: boolean
         default: false
       upload_firmware:
-        description: 'Upload Firmware To Artifact (Artifactにアップロードする)'
+        description: 'Upload Firmware To Artifact\n(Artifactにアップロードする)'
         type: boolean
         default: false
       upload_release:
-        description: 'Upload Firmware To Release (ファームウェアをアップロードする)'
+        description: 'Upload Firmware To Release\n(ファームウェアをアップロードする)'
         type: boolean
         default: false
       cache_toolchain:
-        description: 'Cache Toolchain (キャッシュツールチェーン)'
+        description: 'Cache Toolchain\n(キャッシュツールチェーン)'
         type: boolean
         default: true
   schedule:
