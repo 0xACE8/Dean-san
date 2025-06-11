@@ -28,12 +28,15 @@ jobs:
     - name: test
       run: |
         echo "FILE_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
-        echo "OUTPUT_FILENAME=immortalwrt-2410-snakesan-bcm2710-rpi-3-sysupgrade_$FILE_DATE" >> $GITHUB_ENV
-        echo "The file date is $FILE_DATE"
-        echo ${{ env.OUTPUT_FILENAME }}
 
     - name: Debug GITHUB_ENV
-      run: cat $GITHUB_ENV     
+      run: |
+        echo "OUTPUT_FILENAME=immortalwrt-2410-snakesan-bcm2710-rpi-3-sysupgrade_$FILE_DATE" >> $GITHUB_ENV
+        echo "The file date is $FILE_DATE"
+        cat $GITHUB_ENV
+        
 
     - name: Debug FILE_DATE
-      run: echo "FILE_DATE is $FILE_DATE"
+      run: |
+        echo "FILE_DATE is $FILE_DATE" 
+        echo ${{ env.OUTPUT_FILENAME }}
