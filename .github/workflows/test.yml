@@ -1,0 +1,35 @@
+  #
+# Copyright (c) 2019-2020 P3TERX <https://p3terx.com>
+#
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
+#
+# https://github.com/P3TERX/Actions-OpenWrt
+# Description: Build OpenWrt using GitHub Actions
+#
+
+name: Build raspberry pi 3b imwrt 24.10 actions.
+
+on:
+  workflow_dispatch:
+
+env:
+  OUTPUT_FILENAME: immortalwrt-2410-snakesan-bcm2710-rpi-3-sysupgrade
+  TZ: "Asia/Tokyo"
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: write
+
+    steps:
+    - name: test
+      run: |
+        echo "FILE_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+        echo "OUTPUT_FILENAME=${OUTPUT_FILENAME}_${FILE_DATE}" >> $GITHUB_ENV
+        {{ env.OUTPUT_FILENAME }}
+
+
+        
