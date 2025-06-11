@@ -31,7 +31,7 @@ jobs:
 
     - name: Debug GITHUB_ENV
       run: |
-        echo "OUTPUT_FILENAME=immortalwrt-2410-snakesan-bcm2710-rpi-3-sysupgrade_$FILE_DATE" >> $GITHUB_ENV
+        echo "OUTPUT_FILENAME=${OUTPUT_FILENAME}_$FILE_DATE" >> $GITHUB_ENV
         echo "The file date is $FILE_DATE"
         cat $GITHUB_ENV
         
