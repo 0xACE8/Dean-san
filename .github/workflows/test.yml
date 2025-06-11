@@ -32,4 +32,8 @@ jobs:
         echo "The file date is $FILE_DATE"
         echo ${{ env.OUTPUT_FILENAME }}
 
-        
+    - name: Debug GITHUB_ENV
+      run: cat $GITHUB_ENV     
+
+    - name: Debug FILE_DATE
+      run: echo "FILE_DATE is $FILE_DATE"
