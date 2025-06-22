@@ -34,8 +34,8 @@ on:
         required: true
         type: boolean
         default: true
-  schedule:
-    - cron: '0 10 * * 0'
+#  schedule:
+#    - cron: '0 10 * * 0'
 
 env:
   # aiamadeus 18.06
