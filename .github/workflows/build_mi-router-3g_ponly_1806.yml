@@ -42,7 +42,7 @@ env:
   MI_R3G_PONLY1806_CONFIG: ${{ secrets.MI_R3G_PONLY1806_CONFIG }}
   MI_R3G_PONLY1806_BACKUP: ${{ secrets.MI_R3G_PONLY1806_BACKUP }}
   # feeds source
-  ADD_FEED_SOURCE: ${{ secrets.ADD_FEED_SOURCE }}
+  ADD1806_FEED_SOURCE: ${{ secrets.ADD1806_FEED_SOURCE }}
   # diy script
   FIRMWARE_DIY_SCRIPT: ${{ secrets.FIRMWARE_DIY_SCRIPT }}
   # cmcc color theme
@@ -125,7 +125,7 @@ jobs:
         git clone $PONLY1806_REPO_URL -b $PONLY1806_REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         cd openwrt
-        ${{ secrets.ADD_FEED_SOURCE }}
+        ${{ secrets.ADD1806_FEED_SOURCE }}
 
         # Remove All China download sources (中国からのダウンロードソースを削除する)
         PROJECT_MIRRORS_FILE="./scripts/projectsmirrors.json"
