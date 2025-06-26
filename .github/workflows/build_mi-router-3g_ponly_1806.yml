@@ -159,6 +159,8 @@ jobs:
         ${{ secrets.MI_R3G_PONLY1806_CONFIG }}
         mv .config openwrt/.config
         cd openwrt
+        ls
+        ls feeds
         ${{ secrets.PONLY1806_REPO_PATCH }}
         ${{ secrets.FIRMWARE_DIY_SCRIPT }}
         ${{ secrets.MI_R3G_PONLY1806_HOSTNAME }}
