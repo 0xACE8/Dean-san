@@ -44,7 +44,7 @@ env:
   # feeds source
   ADD1806_FEED_SOURCE: ${{ secrets.ADD1806_FEED_SOURCE }}
   # diy script
-  FIRMWARE_DIY_SCRIPT: ${{ secrets.FIRMWARE_DIY_SCRIPT }}
+  FIRMWARE1806_DIY_SCRIPT: ${{ secrets.FIRMWARE1806_DIY_SCRIPT }}
   # cmcc color theme
   ARGON_THEME_CMCC: ${{ secrets.ARGON_THEME_CMCC }}
   # token
@@ -162,7 +162,7 @@ jobs:
         ls
         ls feeds
         ${{ secrets.PONLY1806_REPO_PATCH }}
-        ${{ secrets.FIRMWARE_DIY_SCRIPT }}
+        ${{ secrets.FIRMWARE1806_DIY_SCRIPT }}
         ${{ secrets.MI_R3G_PONLY1806_HOSTNAME }}
         ${{ secrets.ARGON_THEME_CMCC }}
 
