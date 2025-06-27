@@ -47,7 +47,7 @@ env:
   # diy script
   FIRMWARE_DIY_SCRIPT: ${{ secrets.FIRMWARE_DIY_SCRIPT }}
   # cmcc color theme
-  ARGON_THEME_CMCC: ${{ secrets.ARGON_THEME_CMCC }}
+  ARGON_THEME_XIAOMI: ${{ secrets.ARGON_THEME_XIAOMI }}
   # token
   ACCESS_SHA512SUM: ${{ secrets.ACCESS_SHA512SUM }}
   ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
@@ -134,6 +134,12 @@ jobs:
           sed -i '/.cn\//d; /tencent/d; /aliyun/d' "$PROJECT_MIRRORS_FILE"
         fi
 
+    - name: install turboacc and patch (turboaccとパッチをインストールする)
+      working-directory: ./openwrt
+      run: |
+        curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && bash add_turboacc.sh
+        sed -i 's/Turbo ACC 网络加速/网络加速/g' package/turboacc/luci-app-turboacc/po/zh-cn/turboacc.po
+
     - name: Generate Variables (変数を生成する)
       run: |
         SOURCE_REPO="$(echo $IMWRT241002_REPO_URL | awk -F '/' '{print $(NF)}')"
@@ -163,7 +169,7 @@ jobs:
         ${{ secrets.IMWRT241002_REPO_PATCH }}
         ${{ secrets.FIRMWARE_DIY_SCRIPT }}
         ${{ secrets.MI_R3G_IMWRT241002_HOSTNAME }}
-        ${{ secrets.ARGON_THEME_CMCC }}
+        ${{ secrets.ARGON_THEME_XIAOMI }}
 
     - name: Restore configuration archive (バックアップした構成アーカイブを復元する)
       if: (github.event.inputs.restore_configuration == 'true' && github.event.inputs.restore_configuration != 'false') || contains(github.event.action, 'restore_configuration') && !cancelled()
