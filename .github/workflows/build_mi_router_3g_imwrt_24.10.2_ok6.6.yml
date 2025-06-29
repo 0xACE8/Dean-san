@@ -60,7 +60,7 @@ env:
   CPU_TAG: mt7621a
   FLASH_TAG: SPI_NAND_128M
   SOURCE_CODE: ImmortalWrt
-  KERNEL_VERSION: openkernel_6.6
+  KERNEL_VERSION: kernel_6.6
   OUTPUT_FILENAME: immortalwrt-24.10.2-dean-mt7621a-mi_router_3g-sysupgrade
   TZ: "Asia/Tokyo"
 
@@ -209,6 +209,9 @@ jobs:
       run: |
         cd openwrt/bin/targets/*/*
         ls | grep -v *kernel1.bin | grep -v *rootfs0.bin | grep -v *sysupgrade.bin | xargs rm -rdf
+        mv *kernel1.bin ${{ env.OUTPUT_FILENAME }}_kernel1.bin
+        mv *rootfs0.bin ${{ env.OUTPUT_FILENAME }}_rootfs0.bin
+        mv *sysupgrade.bin ${{ env.OUTPUT_FILENAME }}_sysupgrade.bin
         sha512sums -qq -r -P ${{ secrets.ACCESS_SHA512SUM }} sha512sums *.bin
         ${{ secrets.ACCESS_REPACKAGE_FIRMWARE }} ${{ env.OUTPUT_FILENAME }}.bin
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
@@ -243,7 +246,7 @@ jobs:
       if: steps.compile.outputs.status == 'success' && steps.organize.outputs.status == 'success' && (github.event.inputs.upload_release == 'true' && github.event.inputs.upload_release  != 'false') || contains(github.event.action, 'upload_release')
       uses: ncipollo/release-action@v1
       with:
-        name: ${{ env.CPU_TAG }}_${{ env.DEVICE_NAME }}_${{ env.FLASH_TAG }}}_${{ env.KERNEL_VERSION }}_${{ env.FILE_DATE }}
+        name: ${{ env.CPU_TAG }}_${{ env.DEVICE_NAME }}_${{ env.FLASH_TAG }}_${{ env.KERNEL_VERSION }}_${{ env.FILE_DATE }}
         allowUpdates: false
         tag: ${{ env.RELEASE_TAG }}
         token: ${{ secrets.GITHUB_TOKEN }}
