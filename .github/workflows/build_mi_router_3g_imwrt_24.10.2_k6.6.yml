@@ -9,7 +9,7 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 
-name: Build mi router 3g imwrt 24.10.2 openkernel 6.6 actions.
+name: Build mi router 3g imwrt 24.10.2 kernel 6.6 actions.
 
 on:
   workflow_dispatch:
@@ -59,7 +59,7 @@ env:
   DEVICE_NAME: MI_Router_3G
   CPU_TAG: mt7621a
   FLASH_TAG: SPI_NAND_128M
-  SOURCE_CODE: ImmortalWrt
+  SOURCE_CODE: immortalwrt
   KERNEL_VERSION: kernel_6.6
   OUTPUT_FILENAME: immortalwrt-24.10.2-dean-mt7621a-mi_router_3g-sysupgrade
   TZ: "Asia/Tokyo"
