@@ -8,7 +8,7 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 
-name: Build raspberry pi 3b imwrt 24.10 actions.
+name: Build raspberry pi 3b imwrt 24.10.2 actions.
 
 on:
   workflow_dispatch:
@@ -35,11 +35,10 @@ on:
 env:
   # immortalwrt 2410
   IMWRT2410_REPO_URL: ${{ secrets.IMWRT2410_REPO_URL }}
-  IMWRT2410_REPO_BRANCH: ${{ secrets.IMWRT2410_REPO_BRANCH }}
+  IMWRT241002_REPO_BRANCH: ${{ secrets.IMWRT241002_REPO_BRANCH }}
   IMWRT2410_REPO_PATCH: ${{ secrets.IMWRT2410_REPO_PATCH }}
   # raspberry pi 3b
   RP3B_IMWRT2410_HOSTNAME: ${{ secrets.RP3B_IMWRT2410_HOSTNAME }}
-  RP3B_IMWRT2410_PACKAGE: ${{ secrets.RP3B_IMWRT2410_PACKAGE }}
   RP3B_IMWRT2410_CONFIG: ${{ secrets.RP3B_IMWRT2410_CONFIG }}
   RP3B_IMWRT2410_BACKUP: ${{ secrets.RP3B_IMWRT2410_BACKUP }}
   # feeds source
@@ -49,8 +48,9 @@ env:
   # rpi3b color theme
   ARGON_THEME_RPI: ${{ secrets.ARGON_THEME_RPI }}
   # token
-  ACCESS_SHA512SUM: ${{ secrets.ACCESS_SHA512SUM }}
   ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+  ACCESS_SHA512SUM: ${{ secrets.ACCESS_SHA512SUM }}
+  ACCESS_REPACKAGE_FIRMWARE: ${{ secrets.ACCESS_REPACKAGE_FIRMWARE }}
   # telegram bot
   TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
   TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -59,7 +59,7 @@ env:
   CPU_TAG: bcm2710
   FLASH_TAG: TF_2Gb
   SOURCE_CODE: immortalwrt
-  OUTPUT_FILENAME: immortalwrt-2410-snakesan-bcm2710-rpi-3-sysupgrade
+  OUTPUT_FILENAME: immortalwrt-241002-dean-bcm2710-rpi-3-sysupgrade
   TZ: "Asia/Tokyo"
 
 jobs:
@@ -121,7 +121,7 @@ jobs:
       working-directory: /workdir
       run: |
         df -hT $PWD
-        git clone $IMWRT2410_REPO_URL -b $IMWRT2410_REPO_BRANCH openwrt
+        git clone $IMWRT2410_REPO_URL -b $IMWRT241002_REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         cd openwrt
         ${{ secrets.ADD_FEED_SOURCE }}
@@ -147,7 +147,7 @@ jobs:
       uses: HiGarfield/cachewrtbuild@main
       with:
         ccache: false
-        mixkey: ${{ env.DEVICE_NAME }}-${{ env.SOURCE_REPO }}-${{ secrets.IMWRT2410_REPO_BRANCH }}
+        mixkey: ${{ env.DEVICE_NAME }}-${{ env.SOURCE_REPO }}-${{ secrets.IMWRT241002_REPO_BRANCH }}
         prefix: ${{ github.workspace }}/openwrt
 
     - name: Updata & install feeds (アップデートとフィードのインストール)
@@ -192,6 +192,9 @@ jobs:
         make -j$(nproc) || make -j1 || make -j1 V=s
         echo "status=success" >> $GITHUB_OUTPUT
         echo "FILE_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+
+    - name: Upgrading variables (変数のアップグレード)
+      run: |
         echo "OUTPUT_FILENAME=${OUTPUT_FILENAME}_${FILE_DATE}" >> $GITHUB_ENV
 
     - name: View Disk Usage (ディスク使用量の表示)
@@ -204,7 +207,7 @@ jobs:
         to: ${{ secrets.TELEGRAM_CHAT_ID }}
         token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       run: |
-        curl -s -o /dev/null -X GET "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=❌%20コンパイルに失敗しました！%20❌%0A%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A・🛜支援デバイス:%0A　%20　${{ env.DEVICE_NAME }}%0Aーーーーーーーーーーーーーーーーー%0A・💽フラッシュは:%0A　%20　${{ env.FLASH_TAG }}%0Aーーーーーーーーーーーーーーーーー%0A・📝ソースコード:%0A　%20　${{ env.SOURCE_CODE }}%0Aーーーーーーーーーーーーーーーーー%0A・📦リポジトリを:%0A　%20　${{ env.SOURCE_REPO }}%0Aーーーーーーーーーーーーーーーーー%0A・🔀ブランチ名前:%0A　%20　${{ secrets.IMWRT2410_REPO_BRANCH }}%0Aーーーーーーーーーーーーーーーーー%0A・❌エラーの時間:%0A　%20　$(date +'%Y年%m月%d日_%H時%M分')%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A"
+        curl -s -o /dev/null -X GET "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=❌%20コンパイルに失敗しました！%20❌%0A%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A・🛜支援デバイス:%0A　%20　${{ env.DEVICE_NAME }}%0Aーーーーーーーーーーーーーーーーー%0A・💽フラッシュは:%0A　%20　${{ env.FLASH_TAG }}%0Aーーーーーーーーーーーーーーーーー%0A・📝ソースコード:%0A　%20　${{ env.SOURCE_CODE }}%0Aーーーーーーーーーーーーーーーーー%0A・📦リポジトリを:%0A　%20　${{ env.SOURCE_REPO }}%0Aーーーーーーーーーーーーーーーーー%0A・🔀ブランチ名前:%0A　%20　${{ secrets.IMWRT241002_REPO_BRANCH }}%0Aーーーーーーーーーーーーーーーーー%0A・❌エラーの時間:%0A　%20　$(date +'%Y年%m月%d日_%H時%M分')%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A"
 
     - name: Organize files (ファイルを整理する)
       id: organize
@@ -214,21 +217,21 @@ jobs:
         ls | grep -v *sysupgrade.img.gz | xargs rm -rdf
         mv *.img.gz ${{ env.OUTPUT_FILENAME }}.img.gz
         sha512sums -qq -r -P ${{ secrets.ACCESS_SHA512SUM }} sha512sums ${{ env.OUTPUT_FILENAME }}.img.gz
-        ${{ secrets.RP3B_IMWRT2410_PACKAGE }}
+        ${{ secrets.ACCESS_REPACKAGE_FIRMWARE }} ${{ env.OUTPUT_FILENAME }}.img.gz
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload Firmware To Artifact (Artifactにアップロードする)
-      if: steps.compile.outputs.status == 'success' && (github.event.inputs.upload_firmware == 'true' && github.event.inputs.upload_firmware  != 'false') || contains(github.event.action, 'upload_firmware')
+      if: steps.compile.outputs.status == 'success' && steps.organize.outputs.status != 'success' && (github.event.inputs.upload_firmware == 'true' && github.event.inputs.upload_firmware  != 'false') || contains(github.event.action, 'upload_firmware')
       uses: actions/upload-artifact@main
       with:
-        name: ${{ env.OUTPUT_FILENAME }}_${{ env.FILE_DATE }}
+        name: ${{ env.OUTPUT_FILENAME }}
         path: ${{ env.FIRMWARE }}
 
     - name: Telegram notify when compilation complete (コンパイルが成功したらテレグラムを使用して通知する)
-      if: steps.compile.outputs.status == 'success' && (github.event.inputs.telegram_notify == 'true' && github.event.inputs.telegram_notify != 'false') || contains(github.event.action, 'telegram_notify') && !cancelled()
+      if: steps.compile.outputs.status == 'success' && steps.organize.outputs.status != 'success' && (github.event.inputs.telegram_notify == 'true' && github.event.inputs.telegram_notify != 'false') || contains(github.event.action, 'telegram_notify') && !cancelled()
       run: |
-        curl -s -o /dev/null -X GET "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=✅%20コンパイルが成功しました！%20✅%0A%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A・🛜支援デバイス:%0A　%20　${{ env.DEVICE_NAME }}%0Aーーーーーーーーーーーーーーーーー%0A・💽フラッシュは:%0A　%20　${{ env.FLASH_TAG }}%0Aーーーーーーーーーーーーーーーーー%0A・📝ソースコード:%0A　%20　${{ env.SOURCE_CODE }}%0Aーーーーーーーーーーーーーーーーー%0A・📦リポジトリを:%0A　%20　${{ env.SOURCE_REPO }}%0Aーーーーーーーーーーーーーーーーー%0A・🔀ブランチ名前:%0A　%20　${{ secrets.IMWRT2410_REPO_BRANCH }}%0Aーーーーーーーーーーーーーーーーー%0A・📁ファイル名前:%0A　%20　${{ env.OUTPUT_FILENAME}}_${{ env.FILE_DATE }}%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A"
+        curl -s -o /dev/null -X GET "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=✅%20コンパイルが成功しました！%20✅%0A%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A・🛜支援デバイス:%0A　%20　${{ env.DEVICE_NAME }}%0Aーーーーーーーーーーーーーーーーー%0A・💽フラッシュは:%0A　%20　${{ env.FLASH_TAG }}%0Aーーーーーーーーーーーーーーーーー%0A・📝ソースコード:%0A　%20　${{ env.SOURCE_CODE }}%0Aーーーーーーーーーーーーーーーーー%0A・📦リポジトリを:%0A　%20　${{ env.SOURCE_REPO }}%0Aーーーーーーーーーーーーーーーーー%0A・🔀ブランチ名前:%0A　%20　${{ secrets.IMWRT241002_REPO_BRANCH }}%0Aーーーーーーーーーーーーーーーーー%0A・📁ファイル名前:%0A　%20　${{ env.OUTPUT_FILENAME}}_${{ env.FILE_DATE }}%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A"
 
     - name: Generate Release Tag (タグを生成する)
       run: |
@@ -236,10 +239,10 @@ jobs:
         echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
 
     - name: Upload Firmware To Release (ファームウェアをアップロードする)
-      if: steps.compile.outputs.status == 'success' && (github.event.inputs.upload_release == 'true' && github.event.inputs.upload_release  != 'false') || contains(github.event.action, 'upload_release')
+      if: steps.compile.outputs.status == 'success' && steps.organize.outputs.status != 'success' && (github.event.inputs.upload_release == 'true' && github.event.inputs.upload_release  != 'false') || contains(github.event.action, 'upload_release')
       uses: ncipollo/release-action@v1
       with:
-        name: ${{ env.CPU_TAG }}_${{ env.DEVICE_NAME }}_${{ env.FLASH_TAG }}_${{ env.FILE_DATE }}
+        name: ${{ env.CPU_TAG }}_${{ env.DEVICE_NAME }}_${{ env.FLASH_TAG }}
         allowUpdates: false
         tag: ${{ env.RELEASE_TAG }}
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -251,7 +254,7 @@ jobs:
           - 💽 フラッシュは: ${{ env.FLASH_TAG }}
           - 📝 ソースコード: ${{ env.SOURCE_CODE }}
           - 📦 リポジトリを: ${{ env.SOURCE_REPO }}
-          - 🔀 ブランチ名前: ${{ secrets.IMWRT2410_REPO_BRANCH }}
+          - 🔀 ブランチ名前: ${{ secrets.IMWRT241002_REPO_BRANCH }}
           - 🌐 接続アドレス: 192.168.***.1 または anna.lan
           - 🔑 パスワードは: なし
           ### ⚠️ 警告する ⚠️
