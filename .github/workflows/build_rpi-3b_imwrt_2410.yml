@@ -34,7 +34,7 @@ on:
 
 env:
   # immortalwrt 2410
-  IMWRT2410_REPO_URL: ${{ secrets.IMWRT2410_REPO_URL }}
+  IMWRT241002_REPO_URL: ${{ secrets.IMWRT241002_REPO_URL }}
   IMWRT241002_REPO_BRANCH: ${{ secrets.IMWRT241002_REPO_BRANCH }}
   IMWRT241002_REPO_PATCH: ${{ secrets.IMWRT241002_REPO_PATCH }}
   # raspberry pi 3b
@@ -59,7 +59,7 @@ env:
   CPU_TAG: bcm2710
   FLASH_TAG: TF_2Gb
   SOURCE_CODE: immortalwrt
-  OUTPUT_FILENAME: immortalwrt-241002-dean-bcm2710-rpi-3-sysupgrade
+  OUTPUT_FILENAME: immortalwrt-24.10.2-dean-bcm2710-rpi-3-sysupgrade
   TZ: "Asia/Tokyo"
 
 jobs:
@@ -121,7 +121,7 @@ jobs:
       working-directory: /workdir
       run: |
         df -hT $PWD
-        git clone $IMWRT2410_REPO_URL -b $IMWRT241002_REPO_BRANCH openwrt
+        git clone $IMWRT241002_REPO_URL -b $IMWRT241002_REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         cd openwrt
         ${{ secrets.ADD_FEED_SOURCE }}
@@ -140,7 +140,7 @@ jobs:
 
     - name: Generate Variables (変数を生成する)
       run: |
-        SOURCE_REPO="$(echo $IMWRT2410_REPO_URL | awk -F '/' '{print $(NF)}')"
+        SOURCE_REPO="$(echo $IMWRT241002_REPO_URL | awk -F '/' '{print $(NF)}')"
         echo "SOURCE_REPO=$SOURCE_REPO" >> $GITHUB_ENV
 
     - name: Cache Toolchain (キャッシュツールチェーン)
