@@ -163,6 +163,9 @@ jobs:
         ./scripts/feeds update -a
         rm -rf feeds/packages/lang/golang
         git clone https://github.com/sbwml/packages_lang_golang -b 25.x feeds/packages/lang/golang
+        sed -i 's/bootstrap/argon/g' feeds/luci/collections/luci-light/Makefile
+        sed -i 's/Bootstrap/Argon/g' feeds/luci/collections/luci-light/Makefile
+        sed -i 's/bootstrap/argon/g' feeds/luci/modules/luci-base/root/etc/config/luci
         ./scripts/feeds install -a
         ./scripts/feeds install -a
 
