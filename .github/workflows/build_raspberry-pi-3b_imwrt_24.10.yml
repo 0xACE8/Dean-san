@@ -1,4 +1,4 @@
-  #
+#
 # Copyright (c) 2019-2020 P3TERX <https://p3terx.com>
 #
 # This is free software, licensed under the MIT License.
@@ -8,7 +8,7 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 
-name: Build raspberry pi 3b imwrt 24.10 actions.
+name: Build raspberry-pi_3b imwrt 24.10ss actions.
 
 on:
   workflow_dispatch:
@@ -33,33 +33,32 @@ on:
     - cron: '0 19 * * 0'
 
 env:
-  # immortalwrt 2410
-  IMWRT2410_REPO_URL: ${{ secrets.IMWRT2410_REPO_URL }}
-  IMWRT2410_REPO_BRANCH: ${{ secrets.IMWRT2410_REPO_BRANCH }}
-  IMWRT2410_REPO_PATCH: ${{ secrets.IMWRT2410_REPO_PATCH }}
+  # immortalwrt openwrt-2410
+  REPO_IMMORTALWRT_2410SS_URL: ${{ secrets.REPO_IMMORTALWRT_2410SS_URL }}
+  REPO_IMMORTALWRT_2410SS_BRANCH: ${{ secrets.REPO_IMMORTALWRT_2410SS_BRANCH }}
+  REPO_IMMORTALWRT_2410SS_PATCH: ${{ secrets.REPO_IMMORTALWRT_2410SS_PATCH }}
   # raspberry pi 3b
-  RP3B_IMWRT2410_HOSTNAME: ${{ secrets.RP3B_IMWRT2410_HOSTNAME }}
-  RP3B_IMWRT2410_CONFIG: ${{ secrets.RP3B_IMWRT2410_CONFIG }}
-  RP3B_IMWRT2410_BACKUP: ${{ secrets.RP3B_IMWRT2410_BACKUP }}
+  RASPBERRYPI_3B_IMWRT2410SS_SUPPORT: ${{ secrets.RASPBERRYPI_3B_IMWRT2410SS_SUPPORT }}
+  RASPBERRYPI_3B_IMWRT2410SS_CONFIG: ${{ secrets.RASPBERRYPI_3B_IMWRT2410SS_CONFIG }}
+  RASPBERRYPI_3B_IMWRT2410SS_BACKUP: ${{ secrets.RASPBERRYPI_3B_IMWRT2410SS_BACKUP }}
   # feeds source
   ADD_FEED_SOURCE: ${{ secrets.ADD_FEED_SOURCE }}
-  # diy script
-  FIRMWARE_DIY_SCRIPT: ${{ secrets.FIRMWARE_DIY_SCRIPT }}
-  # rpi3b color theme
+  # rpi color theme
   ARGON_THEME_RPI: ${{ secrets.ARGON_THEME_RPI }}
   # token
   ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
   ACCESS_SHA512SUM: ${{ secrets.ACCESS_SHA512SUM }}
-  ACCESS_REPACKAGE_FIRMWARE: ${{ secrets.ACCESS_REPACKAGE_FIRMWARE }}
+  ACCESS_REPACKAGE: ${{ secrets.ACCESS_REPACKAGE }}
   # telegram bot
   TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
   TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
   # hardware & repo info
   DEVICE_NAME: Raspberry-Pi_3B
   CPU_TAG: bcm2710
-  FLASH_TAG: TF_2Gb
+  FLASH_TAG: TF-2G
   SOURCE_CODE: immortalwrt
-  OUTPUT_FILENAME: immortalwrt-24.10-dean-bcm2710-raspberry_pi-3b-sysupgrade
+  KERNEL_VERSION: kernel_6.6
+  OUTPUT_FILENAME: immortalwrt-24.10ss-kernel_6.6-dean-bcm2710-raspberry-pi_3b-sysupgrade
   TZ: "Asia/Tokyo"
 
 jobs:
@@ -70,6 +69,31 @@ jobs:
       contents: write
 
     steps:
+    - name: Sync and Wait for Plugin Repo
+      env:
+        GH_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        PLUGIN_REPO: "0xACE8/ace8_package"
+        WORKFLOW_FILE: "sync.yml"
+        REF: "openwrt-2410"
+      run: |
+        echo "🚀 Triggering workflow in $PLUGIN_REPO..."
+        START_TIME=$(date -u +%s)
+          
+        gh workflow run "$WORKFLOW_FILE" --repo "$PLUGIN_REPO" --ref "$REF"
+        echo "⏳ Waiting 15s for the workflow to initialize..."
+        sleep 15
+          
+        RUN_ID=$(gh run list --workflow "$WORKFLOW_FILE" --repo "$PLUGIN_REPO" --limit 1 --json databaseId --jq '.[0].databaseId')
+
+        if [ -z "$RUN_ID" ] || [ "$RUN_ID" == "null" ]; then
+          echo "❌ Error: Could not find the triggered run."
+          exit 1
+        fi
+        echo "✅ Found Run ID: $RUN_ID. Holding firmware build until plugin sync finishes..."
+
+        gh run watch "$RUN_ID" --repo "$PLUGIN_REPO" --exit-status
+        echo "🎉 Plugin repo synced! Proceeding to firmware build..."
+
     - name: Checkout (チェックアウト)
       uses: actions/checkout@main
       with:
@@ -112,20 +136,28 @@ jobs:
         sudo -E apt -yqq clean
         sudo -E apt -yqq install zip rename dos2unix libfuse-dev
         sudo bash -c 'bash <(curl -sL https://build-scripts.immortalwrt.org/init_build_environment.sh)'
+        sudo -E apt -yqq install cargo
         rustup target add aarch64-unknown-linux-musl
         sudo -E systemctl daemon-reload
         sudo timedatectl set-timezone "$TZ"
         sudo mkdir -p /workdir
         sudo chown $USER:$GROUPS /workdir
 
+    - name: Setup Git Credentials
+      run: |
+        git config --global url."https://$ACCESS_TOKEN@github.com/0xACE8/".insteadOf "https://github.com/0xACE8/"
+        
     - name: Clone source code (ソースコードのクローン)
       working-directory: /workdir
       run: |
         df -hT $PWD
-        git clone $IMWRT2410_REPO_URL -b $IMWRT2410_REPO_BRANCH openwrt
+        git clone $REPO_IMMORTALWRT_2410SS_URL -b $REPO_IMMORTALWRT_2410SS_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         cd openwrt
+        ${{ secrets.RASPBERRYPI_3B_IMWRT2410SS_SUPPORT }}
+        echo "RASPBERRYPI_3B_IMWRT2410SS_SUPPORT done."
         ${{ secrets.ADD_FEED_SOURCE }}
+        echo "ADD_FEED_SOURCE done."
 
         # Remove All China download sources (中国からのダウンロードソースを削除する)
         PROJECT_MIRRORS_FILE="./scripts/projectsmirrors.json"
@@ -133,28 +165,16 @@ jobs:
           sed -i '/.cn\//d; /tencent/d; /aliyun/d' "$PROJECT_MIRRORS_FILE"
         fi
 
-    - name: install turboacc and patch (turboaccとパッチをインストールする)
-      working-directory: ./openwrt
-      run: |
-        curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && bash add_turboacc.sh
-        sed -i 's/Turbo ACC 网络加速/网络加速/g' package/turboacc/luci-app-turboacc/po/zh-cn/turboacc.po
-
-    - name: add rtl88x2bu-cl and patch (rtl88x2bu-clとパッチをインストールする)
-      working-directory: ./openwrt
-      run: |
-        git clone https://github.com/mirobiala/rtl88x2bu-cl package/kernel/rtl88x2bu-cl
-        ls package/kernel/rtl88x2bu-cl
-
     - name: Generate Variables (変数を生成する)
       run: |
-        SOURCE_REPO="$(echo $IMWRT2410_REPO_URL | awk -F '/' '{print $(NF)}')"
+        SOURCE_REPO="$(echo $REPO_IMMORTALWRT_2410SS_URL | awk -F '/' '{print $(NF)}')"
         echo "SOURCE_REPO=$SOURCE_REPO" >> $GITHUB_ENV
 
     - name: Cache Toolchain (キャッシュツールチェーン)
       uses: HiGarfield/cachewrtbuild@main
       with:
         ccache: true
-        mixkey: BCM2710-${{ env.SOURCE_CODE }}-${{ env.SOURCE_REPO }}-${{ secrets.IMWRT2410_REPO_BRANCH }}
+        mixkey: BCM2710-${{ env.SOURCE_CODE }}-${{ env.SOURCE_REPO }}-${{ env.KERNEL_VERSION }}-${{ secrets.REPO_IMMORTALWRT_2410SS_BRANCH }}
         prefix: ${{ github.workspace }}/openwrt
 
     - name: Updata & install feeds (アップデートとフィードのインストール)
@@ -163,28 +183,24 @@ jobs:
         ./scripts/feeds update -a
         rm -rf feeds/packages/lang/golang
         git clone https://github.com/sbwml/packages_lang_golang -b 25.x feeds/packages/lang/golang
-        sed -i 's/bootstrap/argon/g' feeds/luci/collections/luci-light/Makefile
-        sed -i 's/Bootstrap/Argon/g' feeds/luci/collections/luci-light/Makefile
-        sed -i 's/bootstrap/argon/g' feeds/luci/modules/luci-base/root/etc/config/luci
         ./scripts/feeds install -a
         ./scripts/feeds install -a
 
     - name: Load custom configuration (カスタム構成を読み込む)
       run: |
-        ${{ secrets.RP3B_IMWRT2410_CONFIG }}
+        ${{ secrets.RASPBERRYPI_3B_IMWRT2410SS_CONFIG }}
         mv .config openwrt/.config
         cd openwrt
-        ${{ secrets.IMWRT2410_REPO_PATCH }}
-        ${{ secrets.FIRMWARE_DIY_SCRIPT }}
-        ${{ secrets.RP3B_IMWRT2410_HOSTNAME }}
+        ${{ secrets.REPO_IMMORTALWRT_2410SS_PATCH }}
+        echo "IMMORTALWRT 2410SS REPO PATCH done."
         ${{ secrets.ARGON_THEME_RPI }}
+        echo "ARGON THEME RPI done."
 
     - name: Restore configuration archive (バックアップした構成アーカイブを復元する)
       if: (github.event.inputs.restore_configuration == 'true' && github.event.inputs.restore_configuration != 'false') || contains(github.event.action, 'restore_configuration') && !cancelled()
       working-directory: ./openwrt
       run: |
-        ${{ secrets.RP3B_IMWRT2410_BACKUP }}
-        echo "OUTPUT_FILENAME=immortalwrt-24.10-dean-bcm2710-raspberry_pi-3b-configed-sysupgrade" >> $GITHUB_ENV
+        ${{ secrets.RASPBERRYPI_3B_IMWRT2410SS_BACKUP }}
 
     - name: Download package (パッケージをダウンロード)
       id: package
@@ -200,7 +216,7 @@ jobs:
       run: |
         cd openwrt
         echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 || make -j1 V=s
+        make -j$(($(nproc) + 1)) V=s
         echo "status=success" >> $GITHUB_OUTPUT
         echo "FILE_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
 
@@ -211,14 +227,6 @@ jobs:
     - name: View Disk Usage (ディスク使用量の表示)
       if: (!cancelled())
       run: df -hT
-
-    - name: Telegram notify when compilation error (コンパイルエラーが発生したときにテレグラムを使用して通知する)
-      if: steps.compile.outputs.status != 'success' && (github.event.inputs.telegram_notify == 'true' && github.event.inputs.telegram_notify != 'false') || contains(github.event.action, 'telegram_notify') && !cancelled()
-      env:
-        to: ${{ secrets.TELEGRAM_CHAT_ID }}
-        token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      run: |
-        curl -s -o /dev/null -X GET "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=❌%20コンパイルに失敗しました！%20❌%0A%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A・🛜支援デバイス:%0A　%20　${{ env.DEVICE_NAME }}%0Aーーーーーーーーーーーーーーーーー%0A・💽フラッシュは:%0A　%20　${{ env.FLASH_TAG }}%0Aーーーーーーーーーーーーーーーーー%0A・📝ソースコード:%0A　%20　${{ env.SOURCE_CODE }}%0Aーーーーーーーーーーーーーーーーー%0A・📦リポジトリを:%0A　%20　${{ env.SOURCE_REPO }}%0Aーーーーーーーーーーーーーーーーー%0A・🔀ブランチ名前:%0A　%20　${{ secrets.IMWRT2410_REPO_BRANCH }}%0Aーーーーーーーーーーーーーーーーー%0A・❌エラーの時間:%0A　%20　$(date +'%Y年%m月%d日_%H時%M分')%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A"
 
     - name: Organize files (ファイルを整理する)
       id: organize
@@ -232,7 +240,15 @@ jobs:
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
-    - name: Upload Firmware To Artifact (アーティファクトにアップロードする)
+    - name: Telegram notify when compilation error (コンパイルエラーが発生したときにテレグラムを使用して通知する)
+      if: steps.compile.outputs.status != 'success'  && steps.organize.outputs.status != 'success'&& (github.event.inputs.telegram_notify == 'true' && github.event.inputs.telegram_notify != 'false') || contains(github.event.action, 'telegram_notify') && !cancelled()
+      env:
+        to: ${{ secrets.TELEGRAM_CHAT_ID }}
+        token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      run: |
+        curl -s -o /dev/null -X GET "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=❌%20コンパイルに失敗しました！%20❌%0A%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A・🛜支援デバイス:%0A　%20　${{ env.DEVICE_NAME }}%0Aーーーーーーーーーーーーーーーー%0A・💽フラッシュは:%0A　%20　${{ env.FLASH_TAG }}%0Aーーーーーーーーーーーーーーーー%0A・🧿カーネル使用:%0A　%20　${{ env.KERNEL_VERSION }}%0Aーーーーーーーーーーーーーーーー%0A・📝ソースコード:%0A　%20　${{ env.SOURCE_CODE }}%0Aーーーーーーーーーーーーーーーー%0A・📦リポジトリを:%0A　%20　${{ env.SOURCE_REPO }}%0Aーーーーーーーーーーーーーーーー%0A・🔀ブランチ名前:%0A　%20　${{ secrets.REPO_IMMORTALWRT_2410SS_BRANCH }}%0Aーーーーーーーーーーーーーーーー%0A・❌エラーの時間:%0A　%20　$(date +'%Y年%m月%d日_%H時%M分')%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A"
+
+    - name: Upload Firmware To Artifact (Artifactにアップロードする)
       if: steps.compile.outputs.status == 'success' && steps.organize.outputs.status == 'success' && (github.event.inputs.upload_firmware == 'true' && github.event.inputs.upload_firmware  != 'false') || contains(github.event.action, 'upload_firmware')
       uses: actions/upload-artifact@main
       with:
@@ -242,18 +258,18 @@ jobs:
     - name: Telegram notify when compilation complete (コンパイルが成功したらテレグラムを使用して通知する)
       if: steps.compile.outputs.status == 'success' && steps.organize.outputs.status == 'success' && (github.event.inputs.telegram_notify == 'true' && github.event.inputs.telegram_notify != 'false') || contains(github.event.action, 'telegram_notify') && !cancelled()
       run: |
-        curl -s -o /dev/null -X GET "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=✅%20コンパイルが成功しました！%20✅%0A%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A・🛜支援デバイス:%0A　%20　${{ env.DEVICE_NAME }}%0Aーーーーーーーーーーーーーーーーー%0A・💽フラッシュは:%0A　%20　${{ env.FLASH_TAG }}%0Aーーーーーーーーーーーーーーーーー%0A・📝ソースコード:%0A　%20　${{ env.SOURCE_CODE }}%0Aーーーーーーーーーーーーーーーーー%0A・📦リポジトリを:%0A　%20　${{ env.SOURCE_REPO }}%0Aーーーーーーーーーーーーーーーーー%0A・🔀ブランチ名前:%0A　%20　${{ secrets.IMWRT2410_REPO_BRANCH }}%0Aーーーーーーーーーーーーーーーーー%0A・📁ファイル名前:%0A　%20　${{ env.OUTPUT_FILENAME}}_${{ env.FILE_DATE }}%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A"
+        curl -s -o /dev/null -X GET "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=✅%20コンパイルが成功しました！%20✅%0A%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A・🛜支援デバイス:%0A　%20　${{ env.DEVICE_NAME }}%0Aーーーーーーーーーーーーーーーー%0A・💽フラッシュは:%0A　%20　${{ env.FLASH_TAG }}%0Aーーーーーーーーーーーーーーーー%0A・🧿カーネル使用:%0A　%20　${{ env.KERNEL_VERSION }}%0Aーーーーーーーーーーーーーーーー%0A・📝ソースコード:%0A　%20　${{ env.SOURCE_CODE }}%0Aーーーーーーーーーーーーーーーー%0A・📦リポジトリを:%0A　%20　${{ env.SOURCE_REPO }}%0Aーーーーーーーーーーーーーーーー%0A・🔀ブランチ名前:%0A　%20　${{ secrets.REPO_IMMORTALWRT_2410SS_BRANCH }}%0Aーーーーーーーーーーーーーーーー%0A・📁ファイル名前:%0A　%20　${{ env.OUTPUT_FILENAME}}%0A＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝%0A"
 
     - name: Generate Release Tag (タグを生成する)
       run: |
-        RELEASE_TAG="$CPU_TAG-$DEVICE_NAME-$FLASH_TAG-$FILE_DATE"
+        RELEASE_TAG="$CPU_TAG-$DEVICE_NAME-$FLASH_TAG-$KERNEL_VERSION-$FILE_DATE"
         echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
 
     - name: Upload Firmware To Release (ファームウェアをアップロードする)
       if: steps.compile.outputs.status == 'success' && steps.organize.outputs.status == 'success' && (github.event.inputs.upload_release == 'true' && github.event.inputs.upload_release  != 'false') || contains(github.event.action, 'upload_release')
       uses: ncipollo/release-action@v1
       with:
-        name: ${{ env.CPU_TAG }}_${{ env.DEVICE_NAME }}_${{ env.FLASH_TAG }}
+        name: ${{ env.CPU_TAG }}_${{ env.DEVICE_NAME }}_${{ env.FLASH_TAG }}_${{ env.KERNEL_VERSION }}_${{ env.FILE_DATE }}
         allowUpdates: false
         tag: ${{ env.RELEASE_TAG }}
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -263,9 +279,10 @@ jobs:
           ### 📒「${{ env.SOURCE_CODE }}」リポジトリのソースコードからコンパイルされたファームウェア。
           - 🛜 支援デバイス: ${{ env.DEVICE_NAME }}
           - 💽 フラッシュは: ${{ env.FLASH_TAG }}
+          - 🧿 カーネル使用: ${{ env.KERNEL_VERSION }}
           - 📝 ソースコード: ${{ env.SOURCE_CODE }}
           - 📦 リポジトリを: ${{ env.SOURCE_REPO }}
-          - 🔀 ブランチ名前: ${{ secrets.IMWRT2410_REPO_BRANCH }}
+          - 🔀 ブランチ名前: ${{ secrets.REPO_IMMORTALWRT_2410SS_BRANCH }}
           - 🌐 接続アドレス: 192.168.***.1
           - 🔑 パスワードは: なし
           ### ⚠️ 警告する ⚠️
@@ -278,12 +295,12 @@ jobs:
         token: ${{ secrets.ACCESS_TOKEN }}
         repository: ${{ github.repository }}
         retain_days: 0
-        keep_minimum_runs: 0
+        keep_minimum_runs: 2
 
     - name: Delete Old Releases (古いリリースを削除する)
       uses: dev-drprasad/delete-older-releases@master
       with:
-        keep_latest: 3
+        keep_latest: 6
         delete_tags: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
