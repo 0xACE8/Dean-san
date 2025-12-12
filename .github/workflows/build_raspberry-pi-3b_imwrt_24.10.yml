@@ -142,8 +142,6 @@ jobs:
         sudo timedatectl set-timezone "$TZ"
         sudo mkdir -p /workdir
         sudo chown $USER:$GROUPS /workdir
-        echo "debug"
-        ls -al
 
     - name: Setup Git Credentials
       run: |
@@ -153,9 +151,7 @@ jobs:
       working-directory: /workdir
       run: |
         df -hT $PWD
-        ls -al
         git clone $REPO_IMMORTALWRT_URL -b $REPO_IMMORTALWRT_2410SS_BRANCH openwrt
-        ls -al
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         cd openwrt
         ${{ secrets.RASPBERRYPI_3B_IMWRT2410SS_SUPPORT }}
