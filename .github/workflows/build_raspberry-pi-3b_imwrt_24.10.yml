@@ -34,7 +34,7 @@ on:
 
 env:
   # immortalwrt openwrt-2410
-  REPO_IMMORTALWRT_2410SS_URL: ${{ secrets.REPO_IMMORTALWRT_2410SS_URL }}
+  REPO_IMMORTALWRT_URL: ${{ secrets.REPO_IMMORTALWRT_URL }}
   REPO_IMMORTALWRT_2410SS_BRANCH: ${{ secrets.REPO_IMMORTALWRT_2410SS_BRANCH }}
   REPO_IMMORTALWRT_2410SS_PATCH: ${{ secrets.REPO_IMMORTALWRT_2410SS_PATCH }}
   # raspberry pi 3b
@@ -154,7 +154,7 @@ jobs:
       run: |
         df -hT $PWD
         ls -al
-        git clone $REPO_IMMORTALWRT_2410SS_URL -b $REPO_IMMORTALWRT_2410SS_BRANCH openwrt
+        git clone $REPO_IMMORTALWRT_URL -b $REPO_IMMORTALWRT_2410SS_BRANCH openwrt
         ls -al
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         cd openwrt
@@ -171,7 +171,7 @@ jobs:
 
     - name: Generate Variables (変数を生成する)
       run: |
-        SOURCE_REPO="$(echo $REPO_IMMORTALWRT_2410SS_URL | awk -F '/' '{print $(NF)}')"
+        SOURCE_REPO="$(echo $REPO_IMMORTALWRT_URL | awk -F '/' '{print $(NF)}')"
         echo "SOURCE_REPO=$SOURCE_REPO" >> $GITHUB_ENV
 
     - name: Cache Toolchain (キャッシュツールチェーン)
